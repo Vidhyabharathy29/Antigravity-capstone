@@ -3,6 +3,7 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, Cell
 } from 'recharts';
 import { Cpu, TrendingUp, TrendingDown, Target, Award, Sliders, Zap } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export default function MLPrediction({ ticker }) {
   const [modelType, setModelType] = useState('rf');
@@ -19,7 +20,7 @@ export default function MLPrediction({ ticker }) {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:8000/api/train_ml', {
+      const response = await fetch(`${API_BASE_URL}/api/train_ml`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

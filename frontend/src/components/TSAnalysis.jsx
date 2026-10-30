@@ -3,6 +3,7 @@ import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend, Area, ComposedChart
 } from 'recharts';
 import { Activity, Sliders, AlertCircle, CheckCircle, HelpCircle } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 export default function TSAnalysis({ ticker, historyData }) {
   const [p, setP] = useState(1);
@@ -19,7 +20,7 @@ export default function TSAnalysis({ ticker, historyData }) {
     setError(null);
     try {
       const response = await fetch(
-        `http://localhost:8000/api/forecast?ticker=${ticker}&p=${p}&d=${d}&q=${q}&steps=${steps}`
+        `${API_BASE_URL}/api/forecast?ticker=${ticker}&p=${p}&d=${d}&q=${q}&steps=${steps}`
       );
       if (!response.ok) {
         throw new Error(`Failed to fetch forecast: ${response.statusText}`);

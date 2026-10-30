@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
 import TSAnalysis from './components/TSAnalysis';
 import MLPrediction from './components/MLPrediction';
+import { API_BASE_URL } from './config';
 
 export default function App() {
   const [ticker, setTicker] = useState('AAPL');
@@ -18,7 +19,7 @@ export default function App() {
   // Check API health status
   const checkApiHealth = async () => {
     try {
-      const res = await fetch('http://localhost:8000/');
+      const res = await fetch(`${API_BASE_URL}/`);
       if (res.ok) {
         setApiStatus(true);
       } else {
@@ -35,14 +36,14 @@ export default function App() {
     setError(null);
     try {
       // 1. Fetch info metadata
-      const infoRes = await fetch(`http://localhost:8000/api/stock/info?ticker=${ticker}`);
+      const infoRes = await fetch(`${API_BASE_URL}/api/stock/info?ticker=${ticker}`);
       if (infoRes.ok) {
         const infoData = await infoRes.json();
         setStockInfo(infoData);
       }
 
       // 2. Fetch history and indicators
-      const histRes = await fetch(`http://localhost:8000/api/stock/history?ticker=${ticker}&period=${period}`);
+      const histRes = await fetch(`${API_BASE_URL}/api/stock/history?ticker=${ticker}&period=${period}`);
       if (!histRes.ok) {
         const errJson = await histRes.json();
         throw new Error(errJson.detail || `Failed to load stock data for ${ticker}`);
