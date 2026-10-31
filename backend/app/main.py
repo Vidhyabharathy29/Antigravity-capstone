@@ -9,6 +9,10 @@ from .data_fetcher import fetch_stock_data, fetch_stock_info
 from .indicators import add_all_indicators
 from .ts_models import fit_and_forecast_arima
 from .ml_models import train_and_evaluate_ml
+from .database import (
+    init_db, save_stock_metadata, save_price_history_df,
+    save_prediction_record, get_database_summary
+)
 
 app = FastAPI(
     title="Stock Market Analytics & ML Prediction API",
@@ -76,9 +80,18 @@ def sanitize_records(records: list) -> list:
         cleaned.append(clean_row)
     return cleaned
 
+@app.on_event("startup")
+def startup_event():
+    init_db()
+
 @app.get("/")
 def read_root():
-    return {"status": "online", "message": "Stock Prediction API is running."}
+    return {"status": "online", "message": "Stock Prediction API is running with SQLite database."}
+
+@app.get("/api/database/status")
+def database_status():
+    """Returns real-time status and records from the SQLite stock_market.db database."""
+    return get_database_summary()
 
 @app.get("/api/stock/info")
 def get_stock_info(ticker: str = Query(..., description="Stock ticker symbol, e.g. AAPL")):
@@ -87,6 +100,11 @@ def get_stock_info(ticker: str = Query(..., description="Stock ticker symbol, e.
         raise HTTPException(status_code=400, detail="Ticker symbol cannot be empty.")
     
     info = fetch_stock_info(ticker)
+    if info:
+        try:
+            save_stock_metadata(info)
+        except Exception:
+            pass
     return info
 
 @app.get("/api/stock/history")
@@ -103,6 +121,12 @@ def get_stock_history(
             detail=f"No stock data found for ticker '{ticker}' and period '{period}'."
         )
         
+    # Persist daily records to SQLite database
+    try:
+        save_price_history_df(ticker, df)
+    except Exception:
+        pass
+
     # Calculate indicators
     df_with_indicators = add_all_indicators(df)
     
@@ -157,4 +181,20 @@ def train_machine_learning(req: MLTrainRequest):
     if not results.get("success", False):
         raise HTTPException(status_code=400, detail=results.get("error", "ML training failed."))
         
+    # Log prediction into SQLite database
+    try:
+        pred_trend = results.get("prediction", {}).get("direction", "UNKNOWN")
+        pred_conf = float(results.get("prediction", {}).get("confidence", 0.0))
+        accuracy_val = float(results.get("metrics", {}).get("accuracy", 0.0))
+        save_prediction_record(
+            symbol=ticker,
+            model_type=req.model_type,
+            prediction_date="Next Trading Day",
+            trend=pred_trend,
+            confidence=pred_conf,
+            accuracy=accuracy_val
+        )
+    except Exception:
+        pass
+
     return results
